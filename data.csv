@@ -1,0 +1,21 @@
+media_type,channel,channel_type,year,hour,female_expression_rate,listened_hour,male_expression_rate
+radio,France Inter,Chaine/Station Publique,2005,12,22.36363282121,29,77.63636717879
+radio,France Inter,Chaine/Station Publique,2013,13,35.4205042996673,29,64.5794957003327
+radio,Chérie FM,Chaine/Station Privée,2008,11,42.3003153844672,32,57.6996846155328
+radio,France Culture,Chaine/Station Publique,2017,19,39.9773117033231,36,60.0226882966769
+radio,RTL,Chaine/Station Privée,2008,21,9.2053467580067,32,90.7946532419933
+radio,France Inter,Chaine/Station Publique,2016,5,37.9483198409432,28,62.0516801590568
+tv,Eurosport France,Chaine/Station Privée,2017,10,5.31519091876587,43,94.6848090812341
+radio,NRJ,Chaine/Station Privée,2004,11,27.6252858435884,37,72.3747141564116
+radio,NRJ,Chaine/Station Privée,2011,7,22.8005538514422,45,77.1994461485578
+radio,Rire et Chansons,Chaine/Station Privée,2018,12,27.5773663937792,50,72.4226336062208
+tv,La Chaîne Info,Chaine/Station Privée,2017,14,39.9978250139414,45,60.0021749860586
+tv,Monte Carlo TMC,Chaine/Station Privée,2018,22,23.0306059822234,51,76.9693940177766
+radio,France Culture,Chaine/Station Publique,2010,21,39.6987527968676,27,60.3012472031324
+radio,France Info,Chaine/Station Publique,1999,7,18.5131168458391,29,81.4868831541609
+radio,Radio Classique,Chaine/Station Privée,2011,20,55.0169709660975,36,44.9830290339026
+radio,Radio France Internationale,Chaine/Station Publique,2016,11,51.3918391119638,31,48.6081608880362
+radio,Europe 1,Chaine/Station Privée,2005,17,22.0358306569343,27,77.9641693430657
+radio,Europe 1,Chaine/Station Privée,2008,6,18.1566104990447,22,81.8433895009553
+radio,Europe 1,Chaine/Station Privée,2009,12,36.2501471213814,35,63.7498528786186
+
