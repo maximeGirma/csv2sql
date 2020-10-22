@@ -4,7 +4,6 @@
 
 # TODO : parametrize (filename, output as sqlscript ...)
 # TODO : use var instead of hard coded var
-# TODO : headers are in first row in table (id 1)
 # TODO : Last row in table is NULL
 # TODO :  argument to open mysql cli after import
 
@@ -34,7 +33,7 @@ create_table_statement="${create_table_statement} PRIMARY KEY (id))"
 
 
 # prepare import csv statement from csv keys
-import_csv_statement="load data local infile '/data.csv' into table test.test fields terminated by ',' enclosed by '\\\"' lines terminated by '\n' ("
+import_csv_statement="load data local infile '/data.csv' into table test.test fields terminated by ',' enclosed by '\\\"' lines terminated by '\n' IGNORE 1 LINES ("
 
 for key in $keys
 do
@@ -67,6 +66,6 @@ docker exec some-mysql bash -c "mysql -uroot -ppassword <<< \"SET GLOBAL local_i
 docker exec some-mysql bash -c "mysql -uroot -ppassword --local-infile  <<< \"${import_csv_statement}\""
 
 
-docker run -it --network some-mysql-network --rm mysql mysql -hsome-mysql -uroot -ppassword "test;"
+docker run -it --network some-mysql-network --rm mysql mysql -hsome-mysql -uroot -ppassword "test"
 
 
