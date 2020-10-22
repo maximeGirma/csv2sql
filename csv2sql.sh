@@ -67,6 +67,6 @@ docker exec some-mysql bash -c "mysql -uroot -ppassword <<< \"SET GLOBAL local_i
 docker exec some-mysql bash -c "mysql -uroot -ppassword --local-infile  <<< \"${import_csv_statement}\""
 
 
-docker run -it --network some-mysql-network --rm mysql mysql -hsome-mysql -uroot -ppassword 
+docker run -it --network some-mysql-network --rm mysql mysql -hsome-mysql -uroot -ppassword "test;"
 
 
