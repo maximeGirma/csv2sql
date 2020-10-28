@@ -83,7 +83,7 @@ import_csv_statement="${import_csv_statement%?} );"
 docker network create $TABLE_NAME-mysql-network
 
 #create stack
-docker run -d --name $TABLE_NAME-mysql --network $TABLE_NAME-mysql-network -e MYSQL_ROOT_PASSWORD=password -p 3306:3306 -v $ABSOLUTE_PATH:/$FILENAME mysql:latest --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+docker run -d --name $TABLE_NAME-mysql --network $TABLE_NAME-mysql-network -e MYSQL_ROOT_PASSWORD=password -p 3306:3306 -v $ABSOLUTE_PATH:/$FILENAME mysql:8.0.22 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 
 
 # wait for mysql start up
