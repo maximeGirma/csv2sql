@@ -3,24 +3,55 @@
 
 
 # TODO : parametrize (output as sqlscript ...)
-# TODO : use var instead of hard coded var
 # TODO : Last row in table is NULL
 # TODO : argument to open mysql cli after import
 # TODO : handle UTF-8 encoding
+# wait for container startup and not for time
+# fix insecure command line password
+
+# https://stackoverflow.com/questions/1101957/are-there-any-standard-exit-status-codes-in-linux
+
+#define EX_OK           0       /* successful termination */
+#define EX__BASE        64      /* base value for error messages */
+#define EX_USAGE        64      /* command line usage error */
+#define EX_DATAERR      65      /* data format error */
+#define EX_NOINPUT      66      /* cannot open input */    
+#define EX_NOUSER       67      /* addressee unknown */    
+#define EX_NOHOST       68      /* host name unknown */
+#define EX_UNAVAILABLE  69      /* service unavailable */
+#define EX_SOFTWARE     70      /* internal software error */
+#define EX_OSERR        71      /* system error (e.g., can't fork) */
+#define EX_OSFILE       72      /* critical OS file missing */
+#define EX_CANTCREAT    73      /* can't create (user) output file */
+#define EX_IOERR        74      /* input/output error */
+#define EX_TEMPFAIL     75      /* temp failure; user is invited to retry */
+#define EX_PROTOCOL     76      /* remote error in protocol */
+#define EX_NOPERM       77      /* permission denied */
+#define EX_CONFIG       78      /* configuration error */
+
 
 docker rm -f some-mysql
 docker network rm some-mysql-network
 
 
 INPUT_FILENAME=$1
+ABSOLUTE_PATH=$INPUT_FILENAME
+FILENAME=${1##*/}
 DB_NAME="data_csv"
-TABLE_NAME=${INPUT_FILENAME%.*}
+TABLE_NAME=${FILENAME%.*}
 
+# Check if file exists, else exit
+if test -f "$FILENAME"; then
+    echo "FILE $FILE ok"
+else
+    echo "FILE $ABSOLUTE_PATH not found : Be sure to use absolute path"
+    exit 74
+fi
 
 create_table_statement="CREATE TABLE IF NOT EXISTS $DB_NAME.$TABLE_NAME (id INT NOT NULL AUTO_INCREMENT,"
 
 # get first line of csv
-keys=$(head -n 1 $INPUT_FILENAME)
+keys=$(head -n 1 $ABSOLUTE_PATH)
 
 # replace commas with spaces to iterate on bash array
 keys=$(echo $keys | sed 's/,/ /g')
@@ -36,7 +67,7 @@ create_table_statement="${create_table_statement} PRIMARY KEY (id))"
 
 
 # prepare import csv statement from csv keys
-import_csv_statement="load data local infile '$INPUT_FILENAME' into table $DB_NAME.$TABLE_NAME fields terminated by ',' enclosed by '\\\"' lines terminated by '\n' IGNORE 1 LINES ("
+import_csv_statement="load data local infile '/$FILENAME' into table $DB_NAME.$TABLE_NAME fields terminated by ',' enclosed by '\\\"' lines terminated by '\n' IGNORE 1 LINES ("
 
 for key in $keys
 do
@@ -48,27 +79,27 @@ import_csv_statement="${import_csv_statement%?} );"
 
 
 # create network
-docker network create some-mysql-network
+docker network create $TABLE_NAME-mysql-network
 
 #create stack
-docker run -d --name some-mysql --network some-mysql-network -e MYSQL_ROOT_PASSWORD=password -p 3306:3306 -v /home/maxime/projects/docker/db/$INPUT_FILENAME:/$INPUT_FILENAME mysql:latest
+docker run -d --name $TABLE_NAME-mysql --network $TABLE_NAME-mysql-network -e MYSQL_ROOT_PASSWORD=password -p 3306:3306 -v $ABSOLUTE_PATH:/$FILENAME mysql:latest
 
 
 # create db
 
-docker exec some-mysql bash -c "echo ..."
+docker exec $TABLE_NAME-mysql bash -c "echo ..."
 
 sleep 8
 
-docker exec some-mysql bash -c "mysql -uroot -ppassword <<< \"create database $DB_NAME\""
-docker exec some-mysql bash -c "mysql -uroot -ppassword <<< \"${create_table_statement}\""
+docker exec $TABLE_NAME-mysql bash -c "mysql -uroot -ppassword <<< \"create database $DB_NAME\""
+docker exec $TABLE_NAME-mysql bash -c "mysql -uroot -ppassword <<< \"${create_table_statement}\""
 
 echo $import_csv_statement
 
-docker exec some-mysql bash -c "mysql -uroot -ppassword <<< \"SET GLOBAL local_infile = 1;\""
-docker exec some-mysql bash -c "mysql -uroot -ppassword --local-infile  <<< \"${import_csv_statement}\""
+docker exec $TABLE_NAME-mysql bash -c "mysql -uroot -ppassword <<< \"SET GLOBAL local_infile = 1;\""
+docker exec $TABLE_NAME-mysql bash -c "mysql -uroot -ppassword --local-infile  <<< \"${import_csv_statement}\""
 
 
-docker run -it --network some-mysql-network --rm mysql mysql -hsome-mysql -uroot -ppassword -A "$DB_NAME"
+docker run -it --network $TABLE_NAME-mysql-network --rm mysql mysql -h$TABLE_NAME-mysql -uroot -ppassword -A "$DB_NAME"
 
 
