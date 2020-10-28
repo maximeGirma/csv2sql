@@ -30,10 +30,6 @@
 #define EX_CONFIG       78      /* configuration error */
 
 
-docker rm -f some-mysql
-docker network rm some-mysql-network
-
-
 INPUT_FILENAME=$1
 ABSOLUTE_PATH=$INPUT_FILENAME
 FILENAME=${1##*/}
@@ -47,6 +43,11 @@ else
     echo "FILE $ABSOLUTE_PATH not found : Be sure to use absolute path"
     exit 74
 fi
+
+
+docker rm -f $TABLE_NAME-mysql
+docker network rm $TABLE_NAME-mysql-network
+
 
 create_table_statement="CREATE TABLE IF NOT EXISTS $DB_NAME.$TABLE_NAME (id INT NOT NULL AUTO_INCREMENT,"
 
@@ -82,24 +83,21 @@ import_csv_statement="${import_csv_statement%?} );"
 docker network create $TABLE_NAME-mysql-network
 
 #create stack
-docker run -d --name $TABLE_NAME-mysql --network $TABLE_NAME-mysql-network -e MYSQL_ROOT_PASSWORD=password -p 3306:3306 -v $ABSOLUTE_PATH:/$FILENAME mysql:latest
+docker run -d --name $TABLE_NAME-mysql --network $TABLE_NAME-mysql-network -e MYSQL_ROOT_PASSWORD=password -p 3306:3306 -v $ABSOLUTE_PATH:/$FILENAME mysql:latest --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 
 
-# create db
-
-docker exec $TABLE_NAME-mysql bash -c "echo ..."
-
+# wait for mysql start up
 sleep 8
 
+# create db and table
 docker exec $TABLE_NAME-mysql bash -c "mysql -uroot -ppassword <<< \"create database $DB_NAME\""
 docker exec $TABLE_NAME-mysql bash -c "mysql -uroot -ppassword <<< \"${create_table_statement}\""
 
-echo $import_csv_statement
-
+# populate table
 docker exec $TABLE_NAME-mysql bash -c "mysql -uroot -ppassword <<< \"SET GLOBAL local_infile = 1;\""
 docker exec $TABLE_NAME-mysql bash -c "mysql -uroot -ppassword --local-infile  <<< \"${import_csv_statement}\""
 
-
+# run interactive cli
 docker run -it --network $TABLE_NAME-mysql-network --rm mysql mysql -h$TABLE_NAME-mysql -uroot -ppassword -A "$DB_NAME"
 
 
