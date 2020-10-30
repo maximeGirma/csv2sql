@@ -29,8 +29,14 @@
 #define EX_NOPERM       77      /* permission denied */
 #define EX_CONFIG       78      /* configuration error */
 
+MYSQL_VERSION=8.0.22
+EXTERNAL_CONTAINER_PORT=3338
+INTERNAL_CONTAINER_PORT=3306
+
 
 INPUT_FILENAME=$1
+# delemiter must be between quotes "" or ''
+DELIMITER=$2
 ABSOLUTE_PATH=$INPUT_FILENAME
 FILENAME=${1##*/}
 DB_NAME="data_csv"
@@ -55,7 +61,7 @@ create_table_statement="CREATE TABLE IF NOT EXISTS $DB_NAME.$TABLE_NAME (id INT 
 keys=$(head -n 1 $ABSOLUTE_PATH)
 
 # replace commas with spaces to iterate on bash array
-keys=$(echo $keys | sed 's/,/ /g')
+keys=$(echo $keys | sed "s/$DELIMITER/ /g")
 
 # create_table_statement to create table in db
 for key in $keys
@@ -65,10 +71,10 @@ do
 done
 create_table_statement="${create_table_statement} PRIMARY KEY (id))"
 
-
+echo $create_table_statement
 
 # prepare import csv statement from csv keys
-import_csv_statement="load data local infile '/$FILENAME' into table $DB_NAME.$TABLE_NAME fields terminated by ',' enclosed by '\\\"' lines terminated by '\n' IGNORE 1 LINES ("
+import_csv_statement="load data local infile '/$FILENAME' into table $DB_NAME.$TABLE_NAME fields terminated by '$DELIMITER' enclosed by '\\\"' lines terminated by '\n' IGNORE 1 LINES ("
 
 for key in $keys
 do
@@ -83,8 +89,7 @@ import_csv_statement="${import_csv_statement%?} );"
 docker network create $TABLE_NAME-mysql-network
 
 #create stack
-docker run -d --name $TABLE_NAME-mysql --network $TABLE_NAME-mysql-network -e MYSQL_ROOT_PASSWORD=password -p 3306:3306 -v $ABSOLUTE_PATH:/$FILENAME mysql:latest --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
-
+docker run -d --name $TABLE_NAME-mysql --network $TABLE_NAME-mysql-network -e MYSQL_ROOT_PASSWORD=password -p $EXTERNAL_CONTAINER_PORT:$INTERNAL_CONTAINER_PORT -v $ABSOLUTE_PATH:/$FILENAME mysql:$MYSQL_VERSION --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 
 # wait for mysql start up
 sleep 8
@@ -98,6 +103,6 @@ docker exec $TABLE_NAME-mysql bash -c "mysql -uroot -ppassword <<< \"SET GLOBAL 
 docker exec $TABLE_NAME-mysql bash -c "mysql -uroot -ppassword --local-infile  <<< \"${import_csv_statement}\""
 
 # run interactive cli
-docker run -it --network $TABLE_NAME-mysql-network --rm mysql mysql -h$TABLE_NAME-mysql -uroot -ppassword -A "$DB_NAME"
+docker run -it --network $TABLE_NAME-mysql-network --rm mysql mysql -h$TABLE_NAME-mysql -uroot -ppassword --default-character-set=utf8 -A "$DB_NAME"
 
 
