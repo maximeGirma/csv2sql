@@ -2,7 +2,7 @@
 
 A bash script to turn a csv file into a single table database.
 
-The script creates a mysql container, load your csv in it and open an interactive to allow you to interact with the table.
+The script creates a mysql container, load your csv in it and open an interactive cli to allow you to interact with the table.
 
 ## Documentation
 
@@ -35,7 +35,7 @@ The script should open you a cli after a few loading seconds.
 
 Then simply type `show tables;` to be sure that your table has been created, the table name is generated from your file name.
 
-You're ready to use your simple use table !
+You're ready to use query your table !
 
 - clean the container
 
