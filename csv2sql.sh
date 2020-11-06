@@ -29,7 +29,8 @@
 MYSQL_VERSION=8.0.22
 EXTERNAL_CONTAINER_PORT=3338
 INTERNAL_CONTAINER_PORT=3306
-# get password from conf file & trim space
+
+# get password from conf file (./conf/connection.cnf) & trim space
 ROOT_PASSWORD=$(awk -F "=" '/password/ {print $2}' ./conf/connection.cnf | tr -d ' ')
 
 INPUT_FILENAME=$1
@@ -41,6 +42,7 @@ ABSOLUTE_FILE_PATH=$INPUT_FILENAME
 FILENAME=${1##*/}
 DB_NAME="data_csv"
 TABLE_NAME=${FILENAME%.*}
+
 
 # Check if file exists, else exit
 if test -f "$FILENAME"; then
@@ -89,13 +91,21 @@ import_csv_statement="${import_csv_statement%?} );"
 docker network create $TABLE_NAME-mysql-network
 
 #create stack
-docker run -d --name $TABLE_NAME-mysql --network $TABLE_NAME-mysql-network -e MYSQL_ROOT_PASSWORD=$ROOT_PASSWORD -p $EXTERNAL_CONTAINER_PORT:$INTERNAL_CONTAINER_PORT -v $ABSOLUTE_FILE_PATH:/$FILENAME -v "$CURRENT_DIR/conf":/conf mysql:$MYSQL_VERSION --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+docker run -d --name $TABLE_NAME-mysql --health-cmd='mysqladmin ping --silent' --network $TABLE_NAME-mysql-network -e MYSQL_ROOT_PASSWORD=$ROOT_PASSWORD -p $EXTERNAL_CONTAINER_PORT:$INTERNAL_CONTAINER_PORT -v $ABSOLUTE_FILE_PATH:/$FILENAME -v "$CURRENT_DIR/conf":/conf mysql:$MYSQL_VERSION --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 
+echo "Waiting for mysql start up ..."
 # wait for mysql start up
-sleep 8
+OUTPUT="Can't connect"
+while [[ $OUTPUT != *"database exists"* ]]
+do
+    OUTPUT=$(docker exec $TABLE_NAME-mysql bash -c "mysql --defaults-extra-file=/conf/connection.cnf <<< \"create database $DB_NAME\"" 2>&1)
+    sleep 1
+done
 
+
+echo "container started"
 # create db and table
-docker exec $TABLE_NAME-mysql bash -c "mysql --defaults-extra-file=/conf/connection.cnf <<< \"create database $DB_NAME\""
+# docker exec $TABLE_NAME-mysql bash -c "mysql --defaults-extra-file=/conf/connection.cnf <<< \"create database $DB_NAME\""
 docker exec $TABLE_NAME-mysql bash -c "mysql --defaults-extra-file=/conf/connection.cnf <<< \"${create_table_statement}\""
 
 # populate table
