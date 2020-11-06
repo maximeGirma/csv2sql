@@ -39,4 +39,4 @@ You're ready to use your simple use table !
 
 - clean the container
 
-After exiting the cli, the docker image is still running, to delete it you can simply use `docker rm -f csv2sql`
+After exiting the cli, the docker image should be removed, if not you can delete it manually with `docker rm -f csv2sql`
