@@ -28,7 +28,7 @@
 MYSQL_VERSION=8.0.22
 EXTERNAL_CONTAINER_PORT=3338
 INTERNAL_CONTAINER_PORT=3306
-CONTAINER_NAME=csv2mysql
+CONTAINER_NAME=csv2sql
 # get password from conf file (./conf/connection.cnf) & trim space
 ROOT_PASSWORD=$(awk -F "=" '/password/ {print $2}' ./conf/connection.cnf | tr -d ' ')
 
@@ -49,10 +49,6 @@ else
     echo "FILE $ABSOLUTE_FILE_PATH not found : Be sure to use absolute path"
     exit 74
 fi
-
-
-docker rm -f $CONTAINER_NAME
-docker network rm $CONTAINER_NAME-network
 
 
 create_table_statement="CREATE TABLE IF NOT EXISTS $DB_NAME.$TABLE_NAME (id INT NOT NULL AUTO_INCREMENT,"
@@ -85,11 +81,8 @@ done
 import_csv_statement="${import_csv_statement%?} );"
 
 
-# create network
-docker network create $CONTAINER_NAME-network
-
 #create stack
-docker run -d --name $CONTAINER_NAME --health-cmd='mysqladmin ping --silent' --network $CONTAINER_NAME-network -e MYSQL_ROOT_PASSWORD=$ROOT_PASSWORD -p $EXTERNAL_CONTAINER_PORT:$INTERNAL_CONTAINER_PORT -v $ABSOLUTE_FILE_PATH:/$FILENAME -v "$CURRENT_DIR/conf":/conf mysql:$MYSQL_VERSION --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+docker run -d --name $CONTAINER_NAME -e MYSQL_ROOT_PASSWORD=$ROOT_PASSWORD -p $EXTERNAL_CONTAINER_PORT:$INTERNAL_CONTAINER_PORT -v $ABSOLUTE_FILE_PATH:/$FILENAME -v "$CURRENT_DIR/conf":/conf mysql:$MYSQL_VERSION --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 
 echo "Waiting for mysql start up ..."
 # wait for mysql start up
@@ -105,12 +98,8 @@ echo "mysql container started"
 # create db and table
 
 docker exec $CONTAINER_NAME bash -c "mysql --defaults-extra-file=/conf/connection.cnf <<< \"${create_table_statement}\""
-
 # populate table
 docker exec $CONTAINER_NAME bash -c "mysql --defaults-extra-file=/conf/connection.cnf <<< \"SET GLOBAL local_infile = 1;\""
 docker exec $CONTAINER_NAME bash -c "mysql --defaults-extra-file=/conf/connection.cnf --local-infile  <<< \"${import_csv_statement}\""
-
 # run interactive cli
-docker exec -it $CONTAINER_NAME mysql --defaults-extra-file=/conf/connection.cnf -h$CONTAINER_NAME --default-character-set=utf8 -A "$DB_NAME" 
-
-
+docker exec -it $CONTAINER_NAME mysql --defaults-extra-file=/conf/connection.cnf --default-character-set=utf8 -A "$DB_NAME" 
