@@ -4,7 +4,8 @@
 
 # TODO : parametrize (output as sqlscript ...)
 # TODO : argument to open mysql cli after import
-# wait for container startup and not for time
+# TODO Handle already used port
+# TODO Handle useless container (delete)
 
 # https://stackoverflow.com/questions/1101957/are-there-any-standard-exit-status-codes-in-linux
 
@@ -29,7 +30,7 @@
 MYSQL_VERSION=8.0.22
 EXTERNAL_CONTAINER_PORT=3338
 INTERNAL_CONTAINER_PORT=3306
-
+CONTAINER_NAME=csv2mysql
 # get password from conf file (./conf/connection.cnf) & trim space
 ROOT_PASSWORD=$(awk -F "=" '/password/ {print $2}' ./conf/connection.cnf | tr -d ' ')
 
@@ -53,8 +54,8 @@ else
 fi
 
 
-docker rm -f $TABLE_NAME-mysql
-docker network rm $TABLE_NAME-mysql-network
+docker rm -f $CONTAINER_NAME
+docker network rm $CONTAINER_NAME-network
 
 
 create_table_statement="CREATE TABLE IF NOT EXISTS $DB_NAME.$TABLE_NAME (id INT NOT NULL AUTO_INCREMENT,"
@@ -88,31 +89,31 @@ import_csv_statement="${import_csv_statement%?} );"
 
 
 # create network
-docker network create $TABLE_NAME-mysql-network
+docker network create $CONTAINER_NAME-network
 
 #create stack
-docker run -d --name $TABLE_NAME-mysql --health-cmd='mysqladmin ping --silent' --network $TABLE_NAME-mysql-network -e MYSQL_ROOT_PASSWORD=$ROOT_PASSWORD -p $EXTERNAL_CONTAINER_PORT:$INTERNAL_CONTAINER_PORT -v $ABSOLUTE_FILE_PATH:/$FILENAME -v "$CURRENT_DIR/conf":/conf mysql:$MYSQL_VERSION --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+docker run -d --name $CONTAINER_NAME --health-cmd='mysqladmin ping --silent' --network $CONTAINER_NAME-network -e MYSQL_ROOT_PASSWORD=$ROOT_PASSWORD -p $EXTERNAL_CONTAINER_PORT:$INTERNAL_CONTAINER_PORT -v $ABSOLUTE_FILE_PATH:/$FILENAME -v "$CURRENT_DIR/conf":/conf mysql:$MYSQL_VERSION --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 
 echo "Waiting for mysql start up ..."
 # wait for mysql start up
 OUTPUT="Can't connect"
 while [[ $OUTPUT != *"database exists"* ]]
 do
-    OUTPUT=$(docker exec $TABLE_NAME-mysql bash -c "mysql --defaults-extra-file=/conf/connection.cnf <<< \"create database $DB_NAME\"" 2>&1)
+    OUTPUT=$(docker exec $CONTAINER_NAME bash -c "mysql --defaults-extra-file=/conf/connection.cnf <<< \"create database $DB_NAME\"" 2>&1)
     sleep 1
 done
 
 
 echo "mysql container started"
 # create db and table
-# docker exec $TABLE_NAME-mysql bash -c "mysql --defaults-extra-file=/conf/connection.cnf <<< \"create database $DB_NAME\""
-docker exec $TABLE_NAME-mysql bash -c "mysql --defaults-extra-file=/conf/connection.cnf <<< \"${create_table_statement}\""
+
+docker exec $CONTAINER_NAME bash -c "mysql --defaults-extra-file=/conf/connection.cnf <<< \"${create_table_statement}\""
 
 # populate table
-docker exec $TABLE_NAME-mysql bash -c "mysql --defaults-extra-file=/conf/connection.cnf <<< \"SET GLOBAL local_infile = 1;\""
-docker exec $TABLE_NAME-mysql bash -c "mysql --defaults-extra-file=/conf/connection.cnf --local-infile  <<< \"${import_csv_statement}\""
+docker exec $CONTAINER_NAME bash -c "mysql --defaults-extra-file=/conf/connection.cnf <<< \"SET GLOBAL local_infile = 1;\""
+docker exec $CONTAINER_NAME bash -c "mysql --defaults-extra-file=/conf/connection.cnf --local-infile  <<< \"${import_csv_statement}\""
 
 # run interactive cli
-docker exec -it $TABLE_NAME-mysql mysql --defaults-extra-file=/conf/connection.cnf -h$TABLE_NAME-mysql --default-character-set=utf8 -A "$DB_NAME" 
+docker exec -it $CONTAINER_NAME mysql --defaults-extra-file=/conf/connection.cnf -h$CONTAINER_NAME --default-character-set=utf8 -A "$DB_NAME" 
 
 
