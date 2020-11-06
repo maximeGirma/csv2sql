@@ -42,9 +42,8 @@ FILENAME=${1##*/}
 DB_NAME="data_csv"
 TABLE_NAME=${FILENAME%.*}
 
-
 # Check if file exists, else exit
-if test -f "$FILENAME"; then
+if test -f "$ABSOLUTE_FILE_PATH"; then
     echo "FILE $FILE ok"
 else
     echo "FILE $ABSOLUTE_FILE_PATH not found : Be sure to use absolute path"
