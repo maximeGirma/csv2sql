@@ -103,3 +103,4 @@ docker exec $CONTAINER_NAME bash -c "mysql --defaults-extra-file=/conf/connectio
 docker exec $CONTAINER_NAME bash -c "mysql --defaults-extra-file=/conf/connection.cnf --local-infile  <<< \"${import_csv_statement}\""
 # run interactive cli
 docker exec -it $CONTAINER_NAME mysql --defaults-extra-file=/conf/connection.cnf --default-character-set=utf8 -A "$DB_NAME" 
+echo removing container $(docker rm -f $CONTAINER_NAME)
