@@ -4,8 +4,6 @@
 
 # TODO : parametrize (output as sqlscript ...)
 # TODO : argument to open mysql cli after import
-# TODO Handle already used port
-# TODO Handle useless container (delete)
 
 # https://stackoverflow.com/questions/1101957/are-there-any-standard-exit-status-codes-in-linux
 
