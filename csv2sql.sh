@@ -103,7 +103,7 @@ do
 done
 
 
-echo "container started"
+echo "mysql container started"
 # create db and table
 # docker exec $TABLE_NAME-mysql bash -c "mysql --defaults-extra-file=/conf/connection.cnf <<< \"create database $DB_NAME\""
 docker exec $TABLE_NAME-mysql bash -c "mysql --defaults-extra-file=/conf/connection.cnf <<< \"${create_table_statement}\""
